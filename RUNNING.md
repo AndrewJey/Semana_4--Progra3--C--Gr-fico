@@ -28,3 +28,12 @@ Inventario y compilaciones locales del 2026-11-15. Una compilación correcta no 
 
 `.gitignore` excluye credenciales locales, estado del editor y salidas de las herramientas detectadas. No deja de versionar archivos que ya estaban en Git. Los manifiestos, archivos de bloqueo, recursos fuente y scripts de esquema forman parte del código.
 <!-- local-development:end -->
+
+<!-- improvements-20261119:start -->
+## Mejoras y verificación — 2026-11-19 (Corrección de sobrescritura de instancias y CRUD validado de Personas)
+
+- Corregido el bug crítico en `Form1.cs` donde una sola instancia compartida `Persona` sobrescribía los registros previos de la lista.
+- Introducido `PersonaRepository` con validación de campos obligatorios, cédula numérica positiva, control de duplicados, edición, eliminación y agrupación por nacionalidad.
+- Mejorado el cierre y expansión automática del `TreeView` en `Form2.cs`.
+- Validación: compilación MSBuild y 9 aserciones automatizadas de CRUD y validaciones.
+<!-- improvements-20261119:end -->

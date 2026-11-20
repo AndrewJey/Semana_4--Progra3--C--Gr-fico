@@ -1,58 +1,98 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Semana_4
 {
     public partial class Form1 : Form
     {
-        Persona persona = new Persona();
-        List<Persona> listPersonas = new List<Persona>();
+        private readonly PersonaRepository _repository = new PersonaRepository();
+
         public Form1()
         {
             InitializeComponent();
+            if (cbxNacionalidad.Items.Count > 0 && cbxNacionalidad.SelectedIndex < 0)
+            {
+                cbxNacionalidad.SelectedIndex = 0;
+            }
+            UpdateTitleCount();
+        }
+
+        public PersonaRepository Repository => _repository;
+
+        private void UpdateTitleCount()
+        {
+            this.Text = string.Format("Registro de Personas ({0})", _repository.Personas.Count);
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
         {
-            persona.nombre = txtName.Text;
-            persona.apellidos = txtLastName.Text;
-            persona.cédula = Convert.ToInt32(txtID.Text);
-            persona.nacionalidad = cbxNacionalidad.SelectedItem.ToString();
-            listPersonas.Add(persona);
-            txtName.Text = "";
-            txtLastName.Text = "";
-            txtID.Text = "";
+            string nacionalidad = cbxNacionalidad.SelectedItem != null
+                ? cbxNacionalidad.SelectedItem.ToString()
+                : cbxNacionalidad.Text;
 
+            Persona creada;
+            string error;
+            if (!_repository.TryAdd(txtName.Text, txtLastName.Text, txtID.Text, nacionalidad, out creada, out error))
+            {
+                MessageBox.Show(error, "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            txtName.Clear();
+            txtLastName.Clear();
+            txtID.Clear();
+            txtName.Focus();
+            UpdateTitleCount();
+            MessageBox.Show(
+                string.Format("Persona agregada: {0}", creada.VerPersona()),
+                "Registro exitoso",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Form2 form2 = new Form2();
-            TreeNode nodenacional = new TreeNode("Nacionales");
-            TreeNode nodeinternacional = new TreeNode("Internacionales");
-            for (int i = 0; i <= listPersonas.Count - 1; i++)
+            if (_repository.Personas.Count == 0)
             {
-                if (listPersonas.ElementAt(i).nacionalidad.Equals("Nacional"))
-                {
-                    TreeNode node = new TreeNode(listPersonas.ElementAt(i).VerPersona());
-                    nodenacional.Nodes.Add(node);
-                }
-                else
-                {
-                    TreeNode node = new TreeNode(listPersonas.ElementAt(i).VerPersona());
-                    nodeinternacional.Nodes.Add(node);
-                }
+                MessageBox.Show("Aún no hay personas registradas.", "Listado vacío", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
-            form2.treeView1.Nodes.Add(nodenacional);
-            form2.treeView1.Nodes.Add(nodeinternacional);
-            form2.Show();
+
+            using (Form2 form2 = new Form2())
+            {
+                TreeNode nodeNacional = new TreeNode("Nacionales");
+                TreeNode nodeInternacional = new TreeNode("Internacionales");
+
+                foreach (Persona persona in _repository.Personas)
+                {
+                    TreeNode node = new TreeNode(persona.VerPersona()) { Tag = persona };
+                    if (string.Equals(persona.nacionalidad, "Nacional", StringComparison.OrdinalIgnoreCase))
+                    {
+                        nodeNacional.Nodes.Add(node);
+                    }
+                    else
+                    {
+                        nodeInternacional.Nodes.Add(node);
+                    }
+                }
+
+                form2.treeView1.BeginUpdate();
+                try
+                {
+                    form2.treeView1.Nodes.Clear();
+                    form2.treeView1.Nodes.Add(nodeNacional);
+                    form2.treeView1.Nodes.Add(nodeInternacional);
+                    form2.treeView1.ExpandAll();
+                }
+                finally
+                {
+                    form2.treeView1.EndUpdate();
+                }
+
+                form2.ShowDialog(this);
+            }
         }
     }
 }
